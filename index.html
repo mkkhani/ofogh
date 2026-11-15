@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>مدیریت کافی‌نت</title>
-<meta name="app-version" content="2026-11-15.4">
+<meta name="app-version" content="2026-11-15.5">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6f9;--card:#fff;--tx:#1b2430;--mu:#6b7686;--bd:#dde3ea;--pr:#0f4c81;--prt:#fff;--ok:#16a34a;--bad:#dc2626;--warn:#d97706}
@@ -95,12 +95,12 @@ const DEF={services:[
 {id:1,n:'کپی A4',p:2000,c:400,u:1},{id:2,n:'پرینت سیاه‌سفید',p:3000,c:500,u:1},
 {id:3,n:'پرینت رنگی',p:10000,c:3000,u:1},{id:4,n:'اسکن',p:5000,c:0,u:0},
 {id:5,n:'نوبت‌دهی',p:50000,c:0,u:0},{id:6,n:'خدمات تعویض پلاک',p:300000,c:0,u:0}],
-paper:{stock:500,low:50},sales:[],exp:[],nid:10};
+paper:{stock:500,low:50},sales:[],exp:[],printJobs:[],nid:10};
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||DEF}catch(e){S=DEF}
 S.shop=S.shop||{name:'کافی‌نت افق',phone:'09222137612',addr:''};
 S.shop.phone=S.shop.phone||'09222137612';
-S.shop.logo=S.shop.logo||'';
+S.shop.logo=S.shop.logo||'';S.printJobs=S.printJobs||[];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}try{window.desktop&&desktop.autoBackup(JSON.stringify({app:'ofogh-cafenet',v:1,data:S}))}catch(e){}};
 function rc(){const u=new Set(S.services.map(s=>s.k));let k;do{k=String(1000+Math.floor(Math.random()*9000))}while(u.has(k));return k}
 if(S.services.some(s=>!s.k)){S.services.forEach(s=>{if(!s.k)s.k=rc()});save()}
@@ -112,13 +112,13 @@ const jd=t=>new Date(t).toLocaleDateString('fa-IR-u-ca-persian',{year:'numeric',
 const jt=t=>new Date(t).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let tab='dash',cart=[],cust='',custTitle='جناب آقای',disc=0;
-const tabs=[['dash','داشبورد امروز'],['sale','فاکتور جدید'],['svc','خدمات'],['stock','موجودی کاغذ'],['exp','هزینه‌ها'],['db','بانک اطلاعات'],['hist','گزارش‌ها'],['set','تنظیمات']];
+const tabs=[['dash','داشبورد امروز'],['sale','فاکتور جدید'],['svc','خدمات'],['print','چاپ A4'],['stock','موجودی کاغذ'],['exp','هزینه‌ها'],['db','بانک اطلاعات'],['hist','گزارش‌ها'],['set','تنظیمات']];
 function nav(){$('#nav').innerHTML=tabs.map(t=>`<button class="${t[0]==tab?'on':''}" onclick="go('${t[0]}')">${t[1]}</button>`).join('')}
 function go(t){tab=t;render()}
 function today(){const d=day(Date.now());const s=S.sales.filter(x=>day(x.t)==d),e=S.exp.filter(x=>day(x.t)==d);
 const rev=s.reduce((a,x)=>a+x.total,0),cost=s.reduce((a,x)=>a+x.cost,0),ex=e.reduce((a,x)=>a+x.a,0);
 return{s,e,rev,cost,ex,profit:rev-cost-ex}}
-function render(){nav();$('#brandMarkBox').innerHTML=S.shop.logo?`<img src="${S.shop.logo}" alt="لوگو" style="width:38px;height:38px;object-fit:contain;border-radius:8px;background:#fff">`:`<svg width="38" height="38" viewBox="0 0 34 34"><circle cx="17" cy="20" r="9" fill="#f59e0b"/><rect y="20" width="34" height="14" fill="#0b2545"/><path d="M2 21h30" stroke="#fff" stroke-width="2"/></svg>`;$('#hn').textContent=S.shop.name;({dash,sale,svc,stock,exp,db,hist,set})[tab]()}
+function render(){nav();$('#brandMarkBox').innerHTML=S.shop.logo?`<img src="${S.shop.logo}" alt="لوگو" style="width:38px;height:38px;object-fit:contain;border-radius:8px;background:#fff">`:`<svg width="38" height="38" viewBox="0 0 34 34"><circle cx="17" cy="20" r="9" fill="#f59e0b"/><rect y="20" width="34" height="14" fill="#0b2545"/><path d="M2 21h30" stroke="#fff" stroke-width="2"/></svg>`;$('#hn').textContent=S.shop.name;({dash,sale,svc,print:printTab,stock,exp,db,hist,set})[tab]()}
 function dash(){const T=today(),low=S.paper.stock<=S.paper.low;
 $('#app').innerHTML=`<div class="k" style="margin-bottom:10px">${jd(Date.now())}</div>
 <div class="grid">
@@ -145,7 +145,7 @@ $('#app').innerHTML=`<div class="card" style="padding:10px 12px"><div class="sal
 ${cart.map((x,i)=>`<tr><td>${x.k?pd(x.k):'—'}</td><td title="${esc(x.n)}">${esc(x.n)}</td><td><input type="number" min="1" value="${x.q}" onchange="cart[${i}].q=Math.max(1,+this.value||1);sale()"></td><td><input type="number" min="0" value="${x.p}" onchange="cart[${i}].p=+this.value||0;sale()"></td><td>${fmt(x.q*x.p)}</td><td><button class="btn g" onclick="cart.splice(${i},1);sale()">حذف</button></td></tr>`).join('')||'<tr><td colspan=6 class="k">هنوز خدمتی انتخاب نشده است.</td></tr>'}</table></div>
 <div class="row" style="margin-top:10px"><select id="ct" aria-label="عنوان مشتری" onchange="custTitle=this.value"><option ${custTitle==='جناب آقای'?'selected':''}>جناب آقای</option><option ${custTitle==='سرکار خانم'?'selected':''}>سرکار خانم</option><option ${custTitle==='شرکت'?'selected':''}>شرکت</option><option ${custTitle==='اداره'?'selected':''}>اداره</option><option value="" ${custTitle===''?'selected':''}>بدون عنوان</option></select><input id="cu" placeholder="نام مشتری (اختیاری)" value="${esc(cust)}" oninput="cust=this.value"><input id="dc" type="number" min="0" placeholder="تخفیف" value="${disc||''}" oninput="disc=+this.value||0;upTot()">
 <b id="tot">مبلغ نهایی: ${fmt(Math.max(0,sub-disc))}</b><button class="btn" onclick="finish(true)">F8 · ذخیره و چاپ</button><button class="btn" style="background:var(--ok)" onclick="finish(false)">F9 · فقط ذخیره</button></div></div>`}
-function add(id){const s=S.services.find(x=>x.id==id);if(!s)return;const l=cart.find(x=>x.id==id);l?l.q++:cart.push({id,k:s.k,n:s.n,q:1,p:s.p,c:s.c,u:s.u});const pickerOpen=$('#servicePicker').style.display==='block';sale();if(pickerOpen){$('#servicePicker').style.display='block';renderServicePicker();$('#serviceSearch').focus()} }
+function add(id){const s=S.services.find(x=>x.id==id);if(!s)return;let paperUse=+s.u||0;if(paperUse===0&&confirm('برای خدمت «'+s.n+'» از کاغذ A4 استفاده می‌کنید؟\nاگر بله را بزنید، یک برگ از موجودی برای هر واحد این خدمت کسر می‌شود.'))paperUse=1;const l=cart.find(x=>x.id==id);if(l){l.q++;l.u=Math.max(+l.u||0,paperUse)}else cart.push({id,k:s.k,n:s.n,q:1,p:s.p,c:s.c,u:paperUse});const pickerOpen=$('#servicePicker').style.display==='block';sale();if(pickerOpen){$('#servicePicker').style.display='block';renderServicePicker();$('#serviceSearch').focus()} }
 function genId(){const u=new Set(S.sales.map(x=>x.id));let k;do{k=10000+Math.floor(Math.random()*90000)}while(u.has(k));return k}
 function toast(m){const t=$('#ts');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>{t.style.display='none'},2600)}
 function finish(pr){if(!cart.length){toast('فاکتور خالی است');return}const sub=cart.reduce((a,x)=>a+x.q*x.p,0);
@@ -180,6 +180,9 @@ function svc(){$('#app').innerHTML=`<div class="card"><h2>افزودن خدمت 
 <div class="card"><h2>لیست خدمات (قابل ویرایش)</h2><input id="q1" placeholder="جستجو بر اساس نام یا کد خدمت" value="${esc(q1)}" oninput="q1=this.value;svcList()" style="width:100%;margin-bottom:10px"><div class="wrap" id="sl"></div></div>`;svcList()}
 function ed(i,k,v){if(k=='k'){v=String(v).trim();if(!v||S.services.some((x,j)=>j!=i&&x.k==v)){alert('کد باید یکتا و غیرخالی باشد');svcList();return}}S.services[i][k]=v;save()}
 function addSvc(){const n=$('#sn').value.trim();if(!n)return;S.services.push({id:S.nid++,k:rc(),n,p:+$('#sp').value||0,c:+$('#sc').value||0,u:+$('#su').value||0});save();svc()}
+function printTab(){S.printJobs=S.printJobs||[];const jobs=S.printJobs.slice().sort((a,b)=>b.t-a.t);const used=jobs.reduce((a,x)=>a+(+x.q||0),0);$('#app').innerHTML=`<div class="grid"><div class="card"><div class="k">موجودی فعلی A4</div><div class="v">${nf(S.paper.stock)} برگ</div></div><div class="card"><div class="k">چاپ‌های ثبت‌شده در این بخش</div><div class="v">${nf(used)} برگ</div></div></div><div class="card"><h2>ثبت چاپ مستقل A4</h2><div class="k" style="margin-bottom:10px">برای چاپ‌هایی که جدا از فاکتور خدمات انجام می‌دهید، تعداد برگ را ثبت کنید تا از موجودی کم شود.</div><div class="row"><select id="ptType"><option>سیاه‌وسفید</option><option>رنگی</option></select><input id="ptQty" type="number" min="1" value="1" placeholder="تعداد برگ"><input id="ptNote" placeholder="توضیحات (اختیاری)"><button class="btn" onclick="addPrintJob()">ثبت چاپ و کسر موجودی</button></div></div><div class="card"><h2>سوابق چاپ</h2><div class="wrap"><table><tr><th>تاریخ</th><th>نوع چاپ</th><th>تعداد برگ</th><th>توضیحات</th><th></th></tr>${jobs.map(x=>`<tr><td>${jd(x.t)} ${jt(x.t)}</td><td>${esc(x.type)}</td><td>${nf(x.q)}</td><td>${esc(x.note||'—')}</td><td><button class="btn g" onclick="delPrintJob(${x.id})">حذف</button></td></tr>`).join('')||'<tr><td colspan=5 class="k">هنوز چاپی ثبت نشده است.</td></tr>'}</table></div></div>`}
+function addPrintJob(){const q=Math.floor(($('#ptQty').value||0));if(q<1){alert('تعداد برگ باید حداقل ۱ باشد');return}if(q>S.paper.stock){alert('موجودی کاغذ کافی نیست. موجودی فعلی: '+nf(S.paper.stock)+' برگ');return}const job={id:Date.now()+Math.floor(Math.random()*1000),t:Date.now(),type:$('#ptType').value,q,note:$('#ptNote').value.trim()};S.paper.stock-=q;S.printJobs=S.printJobs||[];S.printJobs.push(job);save();printTab();toast(nf(q)+' برگ از موجودی A4 کم شد')}
+function delPrintJob(id){const i=(S.printJobs||[]).findIndex(x=>x.id==id);if(i<0)return;const x=S.printJobs[i];if(!confirm('این سابقه چاپ حذف و '+nf(x.q)+' برگ به موجودی برگردانده شود؟'))return;S.paper.stock+=(+x.q||0);S.printJobs.splice(i,1);save();printTab();toast('موجودی کاغذ برگشت داده شد')}
 function stock(){$('#app').innerHTML=`<div class="card"><h2>موجودی کاغذ A4</h2><div class="v">${nf(S.paper.stock)} برگ <span class="k">(${nf(S.paper.stock/500)} بسته ۵۰۰ برگی)</span></div>
 <div class="row" style="margin-top:12px"><input id="pa" type="number" placeholder="تعداد برگ"><button class="btn" onclick="pap(1)">افزودن به موجودی</button><button class="btn" onclick="pap(0)">تنظیم موجودی دقیق</button></div>
 <div class="row" style="margin-top:12px"><span>هشدار وقتی کمتر از</span><input type="number" value="${S.paper.low}" onchange="S.paper.low=+this.value||0;save()"><span>برگ شد</span></div></div>
@@ -246,7 +249,7 @@ function removeLogo(){if(!S.shop.logo)return;if(!confirm('لوگوی فعلی ح
 async function bkSave(){const d=new Date().toISOString().slice(0,10);const p=await desktop.saveBackup(JSON.stringify({app:'ofogh-cafenet',v:1,data:S}),`ofogh-backup-${d}.json`);if(p)alert('بکاپ ذخیره شد:\n'+p)}
 async function bkLoad(){const t=await desktop.loadBackup();if(!t)return;try{const j=JSON.parse(t),D=j.data||j;if(!Array.isArray(D.services)||!Array.isArray(D.sales))throw 0;if(!confirm('اطلاعات فعلی با بکاپ جایگزین می‌شود. ادامه؟'))return;S=D;S.shop=S.shop||{name:'کافی‌نت افق',phone:'09222137612',addr:''};
 S.shop.phone=S.shop.phone||'09222137612';
-S.shop.logo=S.shop.logo||'';S.exp=S.exp||[];S.paper=S.paper||{stock:0,low:50};S.nid=S.nid||100;save();render();alert('بازیابی انجام شد')}catch(e){alert('فایل بکاپ معتبر نیست')}}
+S.shop.logo=S.shop.logo||'';S.printJobs=S.printJobs||[];S.exp=S.exp||[];S.paper=S.paper||{stock:0,low:50};S.nid=S.nid||100;save();render();alert('بازیابی انجام شد')}catch(e){alert('فایل بکاپ معتبر نیست')}}
 const VER=(document.querySelector('meta[name=app-version]')||{}).content||'0';
 let pend=null;
 async function chkUpd(manual){const u=(S.shop.updUrl||'').trim();
